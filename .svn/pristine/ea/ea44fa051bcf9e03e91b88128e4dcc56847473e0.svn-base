@@ -1,0 +1,49 @@
+package View;
+
+import java.awt.Color;
+import java.util.HashMap;
+
+import Model.Cell.CellColor;
+
+public class ColorHelper {
+	
+	public static final Color defaultColor = new Color(220, 220, 220);
+	
+	public static final HashMap<Integer, CellColor> colors = new HashMap<Integer, CellColor>(){{
+		put(1, CellColor.GREEN);
+		put(2, CellColor.BLUE);
+		put(3, CellColor.RED);
+		put(4, CellColor.YELLOW);
+		put(5, CellColor.BLACK);
+		put(6, CellColor.WHITE);
+	}};
+	
+	public static final HashMap<CellColor, CellColor> oppositColors = new HashMap<CellColor, CellColor>(){{
+		put(CellColor.BLACK, CellColor.GREEN);
+		put(CellColor.RED, CellColor.BLUE);
+		put(CellColor.YELLOW, CellColor.WHITE);
+		put(CellColor.GREEN, CellColor.BLACK);
+		put(CellColor.BLUE, CellColor.RED);
+		put(CellColor.WHITE, CellColor.YELLOW);
+	}};
+	
+	public static Color TranslateColor(CellColor c) {
+		
+		switch (c) {
+		case GREEN:
+			return Color.GREEN;
+		case BLUE:
+			return Color.BLUE;
+		case YELLOW:
+			return Color.YELLOW;
+		case RED:
+			return Color.RED;
+		case BLACK:
+			return Color.BLACK;
+		case WHITE:
+			return Color.WHITE;
+		default:
+			return defaultColor;
+		}
+	}
+}

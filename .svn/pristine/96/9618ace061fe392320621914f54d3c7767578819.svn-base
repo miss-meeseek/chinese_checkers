@@ -1,0 +1,26 @@
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+
+import org.junit.Test;
+
+import Model.Cell;
+import View.CellView;
+
+class testDraw {
+
+	@Test
+	//żle
+	void test() {
+		Cell cell= new Cell(Model.Cell.CellColor.WHITE);
+		JFrame frame = new JFrame();
+		JPanel panel = new JPanel();
+		frame.getContentPane().add(panel);
+		CellView cellView = new CellView( cell);
+		cellView.Draw(panel.getGraphics());
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.pack();
+        frame.setVisible(true);
+        frame.setSize(800, 600);
+	}
+
+}

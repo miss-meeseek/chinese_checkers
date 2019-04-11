@@ -1,0 +1,189 @@
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Random;
+
+import Model.Board;
+import Model.Cell;
+import Model.Peg;
+import Model.Player;
+
+
+public class Bot {
+	
+	public class Move {
+		public Peg peg = null;
+		public Cell cell = null;
+		public Boolean near = false;
+	}
+	
+	private Board board;
+	private Player player;
+	private ArrayList<Peg> playerPegs;
+
+	public Bot(Board board, Player player) {
+		this.board = board;
+		this.player = player;
+		
+		playerPegs = board.GetPlayerPegs(player.myColor);
+		
+		CalculatePlayerCenter();
+	}
+	
+	private void CalculatePlayerCenter() {
+		ArrayList<Cell> playerSector = board.GetSector(player.myColor);
+		
+	}
+	
+	public Move GetMove() {
+		
+		ArrayList<Cell> enemySector = board.GetSector(player.enemyColor);
+		
+		Cell enemyFree = FindEnemyFreeCell(enemySector);
+		
+		System.out.println("FREE__" + player.enemyColor + "___" + enemyFree.x + "____" + enemyFree.y);
+		
+		try {
+		playerPegs.sort((p1, p2) -> {
+			float d1 = GetDistance(p1, enemyFree);
+			float d2 = GetDistance(p2, enemyFree);
+			return Float.compare(d1, d2) * -1;
+		});
+		} catch (NullPointerException ex) {
+			System.out.println(ex);
+		}
+		
+		ArrayList<Cell> freeCellsToMove = null;
+		for (Peg p : playerPegs) {
+			freeCellsToMove = GetFarFreeCells(p);
+			
+			if (freeCellsToMove.size() > 0)
+			{
+				freeCellsToMove.sort((c1, c2) -> {
+					float d1 = GetDistance(c1, enemyFree);
+					float d2 = GetDistance(c2, enemyFree);
+					return Float.compare(d1, d2);
+				});
+				
+				Cell c = freeCellsToMove.get(0);
+				
+				if (GetDistance(c, enemyFree) >= GetDistance(p, enemyFree)) break;
+				
+				Move move = new Move();
+				move.cell = c;
+				move.peg = p;
+				move.near = false;
+				
+				return move;
+			}
+		}
+		
+		for (Peg p : playerPegs) {
+			freeCellsToMove = GetNearFreeCells(p);
+			
+			if (freeCellsToMove.size() > 0)
+			{
+				freeCellsToMove.sort((c1, c2) -> {
+					float d1 = GetDistance(c1, enemyFree);
+					float d2 = GetDistance(c2, enemyFree);
+					return Float.compare(d1, d2);
+				});
+				
+				Cell c = freeCellsToMove.get(0);
+				
+				if (GetDistance(c, enemyFree) >= GetDistance(p, enemyFree)) break;
+				
+				Move move = new Move();
+				move.cell = c;
+				move.peg = p;
+				move.near = true;
+				
+				return move;
+			}
+		}
+		
+		return null;
+	}
+	
+	private float GetDistance(Cell c1, Cell c2){
+		float dx = c1.x - c2.x;
+		float dy = c1.y - c2.y;
+		float d = (float)Math.sqrt((float)(dx * dx + dy * dy));
+		return d;
+	}
+	
+	private float GetDistance(Peg p, Cell c){
+		float dx = p.getX() - c.x;
+		float dy = p.getY() - c.y;
+		float d = (float)Math.sqrt((float)(dx * dx + dy * dy));
+		return d;
+	}
+	
+	public Cell FindEnemyFreeCell(ArrayList<Cell> enemySector) {
+
+		long seed = System.nanoTime();
+		Collections.shuffle(enemySector, new Random(seed));
+		
+		Cell farFree = enemySector.get(0);		
+		for (Cell c : enemySector) {
+			if (board.isCellFree(c) == false) continue;
+			
+			return c;
+		}
+		
+		return farFree;
+	}
+	
+	private ArrayList<Cell> GetFarFreeCells(Peg peg) {
+		ArrayList<Cell> farFreeCells = new ArrayList<Cell>();
+		
+		Cell c = null;
+		c = board.getCell(peg.getX() + 2, peg.getY() + 2);
+		if (CheckFarCell(peg, c)) farFreeCells.add(c);
+		c = board.getCell(peg.getX() + 2, peg.getY() - 2);
+		if (CheckFarCell(peg, c)) farFreeCells.add(c);
+		c = board.getCell(peg.getX() - 2, peg.getY() + 2);
+		if (CheckFarCell(peg, c)) farFreeCells.add(c);
+		c = board.getCell(peg.getX() - 2, peg.getY() - 2);
+		if (CheckFarCell(peg, c)) farFreeCells.add(c);
+		
+		c = board.getCell(peg.getX() + 4, peg.getY());
+		if (CheckFarCell(peg, c)) farFreeCells.add(c);
+		c = board.getCell(peg.getX() - 4, peg.getY());
+		if (CheckFarCell(peg, c)) farFreeCells.add(c);
+
+		return farFreeCells;
+	}
+	
+	private Boolean CheckFarCell(Peg p, Cell c) {
+		
+		if (c == null) return false;
+		
+		int midleX = p.getX() + (c.x - p.getX()) / 2;
+		int midleY = p.getY() + (c.y - p.getY()) / 2;
+		
+		Cell midleCell = board.getCell(midleX, midleY);
+		
+		return board.isCellFree(c) && board.isCellFree(midleCell) == false;
+	}
+	
+	private ArrayList<Cell> GetNearFreeCells(Peg peg) {
+		ArrayList<Cell> farFreeCells = new ArrayList<Cell>();
+		
+		Cell c = null;
+		c = board.getCell(peg.getX() + 1, peg.getY() + 1);
+		if (c != null && board.isCellFree(c)) farFreeCells.add(c);
+		c = board.getCell(peg.getX() + 1, peg.getY() - 1);
+		if (c != null && board.isCellFree(c)) farFreeCells.add(c);
+		c = board.getCell(peg.getX() - 1, peg.getY() + 1);
+		if (c != null && board.isCellFree(c)) farFreeCells.add(c);
+		c = board.getCell(peg.getX() - 1, peg.getY() - 1);
+		if (c != null && board.isCellFree(c)) farFreeCells.add(c);
+		
+		c = board.getCell(peg.getX() + 2, peg.getY());
+		if (c != null && board.isCellFree(c)) farFreeCells.add(c);
+		c = board.getCell(peg.getX() - 2, peg.getY());
+		if (c != null && board.isCellFree(c)) farFreeCells.add(c);
+
+		return farFreeCells;
+	}
+}

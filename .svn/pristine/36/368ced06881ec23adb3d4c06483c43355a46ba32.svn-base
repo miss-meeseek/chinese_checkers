@@ -1,0 +1,144 @@
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+
+import javax.swing.JFrame;
+
+import Model.Board;
+import Model.Cell;
+import Model.Cell.CellColor;
+import Model.Peg;
+import Model.Player;
+import View.MyBoardView;
+import View.BoardView;
+import View.CellView;
+import View.ColorHelper;
+import View.InputListener;
+import View.PegView;
+
+public class GameClient implements InputListener {
+	private Factory factory;
+	private MyBoardView boardView;
+	private Board board;
+	private int currentPlayerID;
+	private int playerID;
+	private ArrayList<ClientListener> listeners = new ArrayList<ClientListener>();
+
+
+	public void registerListener(ClientListener l) {
+		listeners.add(l);
+	}
+	
+	public void unregisterListener(ClientListener l) {
+		listeners.remove(l);
+	}
+	
+	public void Create(JFrame frame) {
+		factory = new Factory();
+		board = new Board();
+        boardView = new MyBoardView();
+    	board.Initialize("src/main/star.txt");  	      
+    	boardView.registerListener(this);
+        frame.getContentPane().add(boardView, "Center");
+        
+   
+    	for(int i = 0; i < Model.Board.Hight; i++) {
+    		for(int j = 0; j < Model.Board.Width; j++) {
+    			if(board.matrix[i][j] != null) {
+    				CellView cellview = factory.CreateCellView(board.matrix[i][j]);
+    				boardView.AddCell(cellview);
+    			}
+    		}
+    	}
+    	boardView.addMouseListener(boardView);
+	}
+
+	
+	public void SetSelectedPeg(boolean selected, int x, int y) {
+		
+		Peg peg = board.GetPeg(x, y);
+		
+		if(peg == null)  {
+			System.out.println("NULL PEG");
+			return;
+		}
+			
+		
+		if(board.selectedPeg != null) {
+			board.selectedPeg.setSelect(false);	
+		}
+		
+		board.selectedPeg = peg;
+		
+		if(peg != null) {
+			board.selectedPeg.setSelect(true);	
+		}
+		
+		boardView.repaint();
+
+	}
+	
+	public void PegMove(int x, int y, int newX, int newY) {
+		
+		Peg peg = board.GetPeg(x, y);
+		
+		if(peg == null) {
+			System.out.println("NULL PEG");
+			return;
+		}
+		
+		peg.setPosition(newX, newY);
+		
+		boardView.repaint();
+	}
+	
+	public void SwitchMove(int playerID) {
+		if(board.selectedPeg != null) {
+			board.selectedPeg.setSelect(false);
+			board.selectedPeg = null;
+		}
+		currentPlayerID = playerID;
+		boardView.setCurrentPlayerColor(board.GetPlayer(playerID).getColor(), playerID);
+		
+		boardView.repaint();
+	}
+	
+	@Override
+	public void OnInput(int x, int y) {
+		
+		listeners.forEach(i -> i.PlayerInput(currentPlayerID, x, y));
+	}
+	
+    public void CreatePegs(Player player) {
+    	  CellColor c = player.getColor();	
+    	  board.GetSector(c).forEach(cell -> {
+    		 Peg p = new Peg(cell);
+    		 board.AddPeg(p);
+    		 PegView pv = new PegView(p);
+    		 boardView.AddPeg(pv);
+    	  });
+     
+	}
+	
+	public void OnChangePlayer() {
+		listeners.forEach(i -> i.SwitchMove(currentPlayerID));
+	}
+	
+	public void CreatePlayer(int playerID, int thisPlayerId, int playersCount) {
+		CellColor color = ColorHelper.GetColor(playerID, playersCount);
+		CellColor enemyColor = ColorHelper.oppositColors.get(color);
+		Player p = new Player(playerID, color, enemyColor);
+		board.players.add(p);
+		CreatePegs(p);
+	
+		CellColor thisPlayerColor = ColorHelper.GetColor(thisPlayerId, playersCount);
+		boardView.setThisPlayerColor(thisPlayerColor, thisPlayerId);
+		boardView.setWaitingPlayers(playersCount - board.players.size());
+		boardView.repaint();
+	}
+	
+	public Board getBoard() {
+		return board;
+	}
+}
